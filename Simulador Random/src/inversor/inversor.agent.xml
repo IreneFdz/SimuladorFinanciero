@@ -1,0 +1,727 @@
+<!--
+	<H3>Agente Inversor. Simulador Financiero.</H3>
+-->
+<agent xmlns="http://jadex.sourceforge.net/jadex"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xsi:schemaLocation="http://jadex.sourceforge.net/jadex
+	                    http://jadex.sourceforge.net/jadex-0.96.xsd"
+	   name="inversor"
+	   package="src.inversor">
+
+	<imports>
+		<import>inversor.beliefs.*</import>
+        <import>inversor.plans.*</import>
+		<import>ontology.predicados.*</import>
+		<import>ontology.acciones.*</import>
+		<import>ontology.conceptos.*</import>
+		<import>jadex.runtime.*</import>
+		<import>jadex.planlib.*</import>
+		<import>jadex.util.*</import>
+		<import>jadex.adapter.fipa.*</import>
+		<import>java.util.logging.*</import>
+		<import>java.util.*</import>
+	</imports>
+
+	<capabilities>
+		<capability name="dfcap" file="jadex.planlib.DF"/>
+	</capabilities>
+
+	<beliefs>
+		<!-- Creencias clase de los planes implementados -->
+		<belief name="MisCartasAcciones" class="MisCartasAcciones"/>
+		<belief name="Inversores" class="Inversores"/>
+		<belief name="PrevisionesEmpresas" class="PrevisionesEmpresas"/>
+		<belief name="Carta_estrategia_inversion" class="Carta_estrategia_inversion"/>
+		<belief name="PilasCartasAccion" class="PilasCartasAccion"/>
+		<belief name="Empresas" class="Empresas"/>
+		<belief name="InformacionGeneral" class="InformacionGeneral"/>
+		
+		<!-- Creencias basadas en tipos basicos -->
+        <belief name="fase" class="String" />
+        <belief name="posible_comprar_bono" class="boolean" />
+        <belief name="mi_turno" class="boolean" />
+        <belief name="manipulacion" class="boolean" />
+		<belief name="venta_en_corto" class="boolean" />
+		<belief name="crisis_sistemica" class="boolean" />
+		<belief name="dividendos_especiales" class="boolean" />
+		<belief name="iniciar_partida" class="boolean" />
+		<belief name="cambiar_turno" class="boolean" />
+	</beliefs>
+
+	<goals>
+		<achievegoalref name="df_search">
+			<concrete ref="dfcap.df_search"/>
+		</achievegoalref>
+		<achievegoalref name="df_register">
+			<concrete ref="dfcap.df_register"/>
+		</achievegoalref>
+
+		<achievegoal name="posibleIniciarPartida">
+			<creationcondition>
+				($beliefbase.iniciar_partida)
+			</creationcondition></achievegoal>
+
+		<achievegoal name="faseComprarBono">
+			<creationcondition>
+				($beliefbase.posible_comprar_bono &amp; $beliefbase.mi_turno)
+			</creationcondition></achievegoal>
+		
+		<achievegoal name="faseOferta">
+			<creationcondition>
+				($beliefbase.mi_turno &amp; $beliefbase.fase.equals("Oferta"))
+			</creationcondition></achievegoal>
+        
+        <achievegoal name="faseSubasta">
+			<creationcondition>
+				($beliefbase.mi_turno &amp; $beliefbase.fase.equals("Demanda"))
+			</creationcondition></achievegoal>
+        
+        <achievegoal name="faseOperaciones">
+			<creationcondition>
+				($beliefbase.mi_turno &amp; $beliefbase.fase.equals("Acciones"))
+			</creationcondition></achievegoal>
+        
+        <achievegoal name="manipulacion">
+			<creationcondition>
+				($beliefbase.mi_turno &amp; $beliefbase.manipulacion)
+			</creationcondition></achievegoal>
+
+		<achievegoal name="ventaEnCorto">
+			<creationcondition>
+				($beliefbase.mi_turno &amp; $beliefbase.venta_en_corto)
+			</creationcondition></achievegoal>
+
+		<achievegoal name="crisisSistemica">
+			<creationcondition>
+				($beliefbase.mi_turno &amp; $beliefbase.crisis_sistemica)
+			</creationcondition></achievegoal>
+
+		<achievegoal name="dividendosEspeciales">
+			<creationcondition>
+				($beliefbase.mi_turno &amp; $beliefbase.dividendos_especiales)
+			</creationcondition></achievegoal>
+        
+        <achievegoal name="faseVenta">
+			<creationcondition>
+				($beliefbase.mi_turno &amp; $beliefbase.fase.equals("Venta"))
+			</creationcondition></achievegoal>
+		
+		<achievegoal name="cambiarTurno">
+			<creationcondition>
+				($beliefbase.cambiar_turno)
+			</creationcondition></achievegoal>
+	
+	</goals>
+
+	<plans>
+		<!-- PLAN INICIAL-->
+		<plan name="Inicial">
+			<body class="InicialPlan" />
+			<trigger><goal ref="posibleIniciarPartida" />
+			</trigger></plan> 
+		
+		<plan name="FalloInicioPartida">
+			<body class="FalloInicioPartidaPlan" />
+			<trigger><messageevent ref="failureInicioPartida" />
+			</trigger></plan> 
+		
+		<plan name="PartidaIniciada">
+			<body class="PartidaIniciadaPlan" />
+			<trigger><messageevent ref="informPartidaIniciada" />
+			</trigger></plan> 
+
+		<!-- 1. Asignar previsiones -->
+		<plan name="AsignarPrevisiones">
+			<body class="AsignarPrevisionesPlan" />
+			<trigger><messageevent ref="previsionesAsignadas" />
+			</trigger></plan> 
+
+		<!-- 2. Repartir cartas inversion -->
+		<plan name="RepartirCartasInversion">
+			<body class="RepartirCartasInversionPlan" />
+			<trigger><messageevent ref="cartasInversionRepartidas"/>
+			</trigger></plan> 
+		
+		<!-- 3. Comprar Bonos -->
+		<plan name="ComprarBono">
+			<body class="ComprarBonoPlan" />
+			<trigger><goal ref="faseComprarBono"/>
+			</trigger></plan>
+		
+		<plan name="FalloCompraBono">
+			<body class="FalloCompraBonoPlan" />
+			<trigger><messageevent ref="failureCompraBono" />
+			</trigger></plan> 
+		
+		<plan name="CompraBonoExitosa">
+			<body class="CompraBonoExitosaPlan" />
+			<trigger><messageevent ref="exitoCompraBono" />
+			</trigger></plan> 
+
+		<!-- 4. Obtener la oferta -->
+		<plan name="PedirCartasAcciones">
+			<body class="PedirCartasAccionesPlan" />
+			<trigger><goal ref="faseOferta" />
+			</trigger></plan>
+			
+		<plan name="ObtenerOferta">
+			<body class="ObtenerOfertaPlan" />
+			<trigger><messageevent ref="informCartasColocadas" />
+			</trigger></plan>
+		
+		<plan name="FormarOferta">
+			<body class="FormarOfertaPlan" />
+			<trigger><messageevent ref="informCartasAccionesColocadas" />
+			</trigger></plan>
+
+		<!-- 5. Pujar por oferta -->
+		<plan name="Pujar">
+			<body class="PujarPlan" />
+			<trigger><goal ref="faseSubasta" />
+			</trigger></plan>
+
+		<plan name="FalloPuja">
+			<body class="FalloPujaPlan" />
+			<trigger><messageevent ref="failurePuja" />
+			</trigger></plan> 
+		
+		<plan name="PujaExitosa">
+			<body class="PujaExitosaPlan" />
+			<trigger><messageevent ref="pujaExitosa" />
+			</trigger></plan> 
+
+		<!-- 6. Informar resultado puja-->
+		<plan name="ResultadoPuja">
+			<body class="ResultadoPujaPlan" />
+			<trigger><messageevent ref="informResultadoPuja"/>
+			</trigger></plan>
+
+		<!-- 7. Pasar turno -->
+		<plan name="PasarTurno">
+			<body class="PasarTurnoPlan" />
+			<trigger><messageevent ref="informTurnoPasado"/>
+			</trigger></plan>
+
+		<!-- 8. Pagar comisiones -->
+		<plan name="PagarComisiones">
+			<body class="PagarComisionesPlan" />
+			<trigger><messageevent ref="requestPagarComisiones"/>
+			</trigger></plan>
+		
+		<plan name="PagoComisionesExitoso">
+			<body class="PagoComisionesExitosoPlan" />
+			<trigger><messageevent ref="informPagoComisionesExitoso" />
+			</trigger></plan> 
+		
+		<!-- 9. Utilizar cartas operaciones -->
+		<plan name="HacerOperaciones">
+			<body class="HacerOperacionesPlan" />
+			<trigger><goal ref="faseOperaciones"/>
+			</trigger></plan>
+		
+		<plan name="FalloOperacion">
+			<body class="FalloOperacionPlan" />
+			<trigger><messageevent ref="failureOperaciones" />
+			</trigger></plan> 
+		
+		<plan name="OperacionExitosa">
+			<body class="OperacionExitosaPlan" />
+			<trigger><messageevent ref="exitoOperaciones" />
+			</trigger></plan> 
+        
+        <!-- 10. Utilizar manipulacion a la baja -->
+		<plan name="Manipulacion">
+			<body class="ManipulacionPlan" />
+			<trigger><goal ref="manipulacion"/>
+			</trigger></plan>
+		
+		<plan name="FalloManipulacion">
+			<body class="FalloManipulacionPlan" />
+			<trigger><messageevent ref="failureManipulacion" />
+			</trigger></plan> 
+		
+		<plan name="ManipulacionExitosa">
+			<body class="ManipulacionExitosaPlan" />
+			<trigger><messageevent ref="exitoManipulacion" />
+			</trigger></plan> 
+        
+        <!-- 11. Utilizar venta en corto -->
+		<plan name="VentaEnCorto">
+			<body class="VentaEnCortoPlan" />
+			<trigger><goal ref="ventaEnCorto"/>
+			</trigger></plan>
+		
+		<plan name="FalloVentaEnCorto">
+			<body class="FalloVentaEnCortoPlan" />
+			<trigger><messageevent ref="failureVentaEnCorto" />
+			</trigger></plan> 
+		
+		<plan name="VentaEnCortoExitosa">
+			<body class="VentaEnCortoExitosaPlan" />
+			<trigger><messageevent ref="exitoVentaEnCorto" />
+			</trigger></plan> 
+        
+        <!-- 12. Utilizar crisis sistemica -->
+		<plan name="CrisisSistemica">
+			<body class="CrisisSistemicaPlan" />
+			<trigger><goal ref="crisisSistemica"/>
+			</trigger></plan>
+		
+		<plan name="FalloCrisisSistemica">
+			<body class="FalloCrisisSistemicaPlan" />
+			<trigger><messageevent ref="failureCrisisSistemica" />
+			</trigger></plan> 
+		
+		<plan name="CrisisSistemicaExitosa">
+			<body class="CrisisSistemicaExitosaPlan" />
+			<trigger><messageevent ref="exitoCrisisSistemica" />
+			</trigger></plan> 
+        
+        <!-- 13. Utilizar dividendos especiales -->
+		<plan name="DividendosEspeciales">
+			<body class="DividendosEspecialesPlan" />
+			<trigger><goal ref="dividendosEspeciales"/>
+			</trigger></plan>
+		
+		<plan name="FalloDividendosEspeciales">
+			<body class="FalloDividendosEspecialesPlan" />
+			<trigger><messageevent ref="failureDividendosEspeciales" />
+			</trigger></plan> 
+		
+		<plan name="DividendosEspecialesExito">
+			<body class="DividendosEspecialesExitoPlan" />
+			<trigger><messageevent ref="exitoDividendosEspeciales" />
+			</trigger></plan> 
+        
+        <!-- 14. Vender accion -->
+		<plan name="VenderAccion">
+			<body class="VenderAccionPlan" />
+			<trigger><goal ref="faseVenta"/>
+			</trigger></plan>
+
+		<plan name="FalloVenderAccion">
+			<body class="FalloVenderAccionPlan" />
+			<trigger><messageevent ref="failureVenderAccion" />
+			</trigger></plan> 
+		
+		<plan name="VentaAccionExitosa">
+			<body class="VentaAccionExitosaPlan" />
+			<trigger><messageevent ref="exitoVenderAccion" />
+			</trigger></plan> 
+        
+        <!-- 15. Actualizacion cotizaciones empresas -->
+		<plan name="ActualizarCotizaciones">
+			<body class="ActualizarCotizacionesPlan" />
+			<trigger><messageevent ref="informActualizarCotizaciones"/>
+			</trigger></plan>
+        
+        <!-- 16. Pagar por bonos -->
+		<plan name="PagarPorBonos">
+			<body class="PagarPorBonosPlan" />
+			<trigger><messageevent ref="informPagoPorBonoHecho"/>
+			</trigger></plan>
+        
+        <!-- 17. Cambiar ronda -->
+		<plan name="CambiarRonda">
+			<body class="CambiarRondaPlan" />
+			<trigger><messageevent ref="informRondaCambiada"/>
+			</trigger></plan>
+        
+        <!-- 18. Cambiar fase -->
+		<plan name="CambiarFase">
+			<body class="CambiarFasePlan" />
+			<trigger><messageevent ref="informFaseCambiada"/>
+			</trigger></plan>
+        
+        <!-- 19. Cambiar turno -->
+		<plan name="CambiarTurno">
+			<body class="CambiarTurnoPlan" />
+			<trigger><messageevent ref="informTurnoCambiado"/>
+			</trigger></plan>
+        
+        <!-- 20. Recuento final -->
+		<plan name="Recuento final">
+			<body class="RecuentoFinalPlan" />
+			<trigger><messageevent ref="informRecuentoFinal"/>
+			</trigger></plan>
+		
+		<!-- 21. Turno acabado -->
+		<plan name="TurnoAcabado">
+			<body class="TurnoAcabadoPlan" />
+			<trigger><goal ref="cambiarTurno"/>
+			</trigger></plan>
+       	
+	</plans>
+
+	<events>
+		<!-- PLAN INCIAL-->
+		<messageevent name="informPartidaIniciada" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Partida_iniciada.class</value>
+			</parameter>
+		</messageevent>
+		
+		<messageevent name="failureInicioPartida" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.FAILURE</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Causa_fallo_participacion.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 1. Asignar previsiones -->
+		<messageevent name="previsionesAsignadas" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Previsiones_asignadas.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 2. Repartir cartas inversion -->
+		<messageevent name="cartasInversionRepartidas" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Cartas_inversion_repartidas.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 3. Comprar bono -->
+		<messageevent name="failureCompraBono" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.FAILURE</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Causa_fallo_compra_bono.class</value>
+			</parameter>
+		</messageevent>
+
+        <messageevent name="exitoCompraBono" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Compra_bono_exitosa.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 4. Obtener la oferta -->
+
+        <messageevent name="informCartasColocadas" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Cartas_acciones_repartidas.class</value>
+			</parameter>
+		</messageevent>
+
+        <messageevent name="informCartasAccionesColocadas" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Cartas_acciones_colocadas.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 5. Pujar por oferta -->
+		<messageevent name="failurePuja" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.FAILURE</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Causa_fallo_puja.class</value>
+			</parameter>
+		</messageevent>
+
+        <messageevent name="pujaExitosa" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Puja_exitosa.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 6. Informar resultado puja -->
+		<messageevent name="informResultadoPuja" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Puja_terminada.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 7. Pasar turno -->
+		<messageevent name="informTurnoPasado" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Turno_pasado.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 8. Pagar comisiones -->
+		<messageevent name="requestPagarComisiones" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Pagar_comisiones.class</value>
+			</parameter>
+		</messageevent>
+
+        <messageevent name="informPagoComisionesExitoso" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Pago_comisiones_exitosa.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 9. Utilizar carta de operaciones -->
+		<messageevent name="failureOperaciones" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.FAILURE</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Causa_fallo_carta_operaciones.class</value>
+			</parameter>
+		</messageevent>
+
+        <messageevent name="exitoOperaciones" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Utilizacion_carta_operaciones_exitosa.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 10. Utilizar manipulacion a la baja -->
+		<messageevent name="failureManipulacion" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.FAILURE</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Causa_fallo_manipulacion.class</value>
+			</parameter>
+		</messageevent>
+
+        <messageevent name="exitoManipulacion" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Utilizacion_manipulacion_exitosa.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 11. Utilizar venta en corto  -->
+		<messageevent name="failureVentaEnCorto" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.FAILURE</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Causa_fallo_venta_en_corto.class</value>
+			</parameter>
+		</messageevent>
+
+        <messageevent name="exitoVentaEnCorto" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Utilizacion_carta_venta_en_corto_exitosa.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 12. Utilizar crisis sistemica  -->
+		<messageevent name="failureCrisisSistemica" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.FAILURE</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Causa_fallo_crisis_sistemica.class</value>
+			</parameter>
+		</messageevent>
+
+        <messageevent name="exitoCrisisSistemica" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Utilizacion_carta_crisis_sistemica_exitosa.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 13. Utilizar dividendos especiales  -->
+		<messageevent name="failureDividendosEspeciales" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.FAILURE</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Causa_fallo_dividendos_especiales.class</value>
+			</parameter>
+		</messageevent>
+
+        <messageevent name="exitoDividendosEspeciales" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Utilizacion_carta_dividendos_especiales_exitosa.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 14. Vender accion  -->
+		<messageevent name="failureVenderAccion" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.FAILURE</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Causa_fallo_venta_accion.class</value>
+			</parameter>
+		</messageevent>
+
+        <messageevent name="exitoVenderAccion" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Venta_accion_exitosa.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 15. Actualizar cotizaciones empresa  -->
+		<messageevent name="informActualizarCotizaciones" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Cotizacion_empresas_actualizadas.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 16. Pagar por bonos  -->
+		<messageevent name="informPagoPorBonoHecho" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Pago_por_bono_hecho.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 17. Cambiar ronda  -->
+		<messageevent name="informRondaCambiada" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Ronda_cambiada.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 18. Cambiar fase  -->
+		<messageevent name="informFaseCambiada" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Fase_cambiada.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 19. Cambiar turno  -->
+		<messageevent name="informTurnoCambiado" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Turno_cambiado.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 20. Recuento final  -->
+		<messageevent name="informRecuentoFinal" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Recuento_final_hecho.class</value>
+			</parameter>
+		</messageevent>
+
+		<!-- ENVIAR: MENSAJES GENERICOS DE ENVIO -->
+		<messageevent name="Request_Generico" direction="send" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+			<parameter name="language" class="String" direction="fixed">
+				<value>SFipa.NUGGETS_XML</value>
+			</parameter>
+		</messageevent>
+
+		<messageevent name="Inform_Generico" direction="send" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="language" class="String" direction="fixed">
+				<value>SFipa.NUGGETS_XML</value>
+			</parameter>
+		</messageevent>
+
+		<messageevent name="Failure_Generico" direction="send" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.FAILURE</value>
+			</parameter>
+			<parameter name="language" class="String" direction="fixed">
+				<value>SFipa.NUGGETS_XML</value>
+			</parameter>
+		</messageevent>
+		
+	</events>
+
+	<configurations>
+		<configuration name="default">
+			<beliefs>
+                <initialbelief ref="posible_comprar_bono">
+					<fact>false</fact></initialbelief>
+                <initialbelief ref="mi_turno">
+					<fact>false</fact></initialbelief>
+				<initialbelief ref="fase">
+					<fact>"Inicial"</fact></initialbelief>
+                <initialbelief ref="iniciar_partida">
+					<fact>true</fact></initialbelief>
+				<initialbelief ref="manipulacion">
+					<fact>false</fact></initialbelief>
+				<initialbelief ref="crisis_sistemica">
+					<fact>false</fact></initialbelief>
+				<initialbelief ref="venta_en_corto">
+					<fact>false</fact></initialbelief>
+				<initialbelief ref="dividendos_especiales">
+					<fact>false</fact></initialbelief>
+				<initialbelief ref="cambiar_turno">
+					<fact>false</fact></initialbelief>
+			</beliefs>
+			<goals>
+				<initialgoal ref="df_register">
+					<parameter ref="description"> <value>
+						SFipa.createAgentDescription(null,SFipa.createServiceDescription("inversor",null, null))</value></parameter>
+				</initialgoal>
+			</goals>
+		</configuration>
+	</configurations>
+</agent>

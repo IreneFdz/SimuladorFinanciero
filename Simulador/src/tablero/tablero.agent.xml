@@ -1,0 +1,472 @@
+<!--
+	<H3>Agente Tablero. Simulador Financiero.</H3>
+-->
+<agent xmlns="http://jadex.sourceforge.net/jadex"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	   xsi:schemaLocation="http://jadex.sourceforge.net/jadex
+	                    http://jadex.sourceforge.net/jadex-0.96.xsd"
+	   name="tablero"
+	   package="src.tablero">
+
+	<imports>
+		<import>tablero.beliefs.*</import>
+        <import>tablero.plans.*</import>
+		<import>ontology.predicados.*</import>
+		<import>ontology.acciones.*</import>
+		<import>ontology.conceptos.*</import>
+		<import>jadex.runtime.*</import>
+		<import>jadex.planlib.*</import>
+		<import>jadex.util.*</import>
+		<import>jadex.adapter.fipa.*</import>
+		<import>java.util.logging.*</import>
+		<import>java.util.*</import>
+	</imports>
+
+	<capabilities>
+		<capability name="dfcap" file="jadex.planlib.DF"/>
+	</capabilities>
+
+	<beliefs>
+		<!-- Creencias clase de los planes implementados -->
+		<belief name="Bonos" class="Bonos"/>
+		<belief name="Inversores" class="Inversores"/>
+		<belief name="Empresas" class="Empresas"/>
+		<belief name="MazoCartasAcciones" class="MazoCartasAcciones"/>
+		<belief name="MazoCartasEstrategiaInversion" class="MazoCartasEstrategiaInversion"/>
+		<belief name="PrevisionesEmpresas" class="PrevisionesEmpresas"/>
+		<belief name="PilasCartasAccion" class="PilasCartasAccion"/>
+		<belief name="InformacionGeneral" class="InformacionGeneral"/>
+		
+		<!-- Creencias basadas en tipos basicos -->
+        <belief name="fase" class="String" />
+		<belief name="repartir_cartas_inversion" class="boolean" />
+		<belief name="puja_terminada" class="boolean" />
+		<belief name="pasar_turno" class="boolean" />
+		<belief name="pago_comisiones" class="boolean" />
+		<belief name="hay_bonos" class="boolean" />
+		<belief name="cambiar_ronda" class="boolean" />
+		<belief name="cambiar_fase" class="boolean" />
+		<belief name="cambiar_turno" class="boolean" />
+		<belief name="final_partida" class="boolean" />
+	</beliefs>
+
+	<goals>
+		<achievegoalref name="df_search">
+			<concrete ref="dfcap.df_search"/>
+		</achievegoalref>
+		<achievegoalref name="df_register">
+			<concrete ref="dfcap.df_register"/>
+		</achievegoalref>
+
+		
+        
+        <achievegoal name="faseInformacion">
+			<creationcondition>
+				($beliefbase.fase.equals("Informacion"))
+			</creationcondition></achievegoal>
+        
+        <achievegoal name="repartirCartaInversion">
+			<creationcondition>
+				($beliefbase.repartir_cartas_inversion)
+			</creationcondition></achievegoal>
+                
+        <achievegoal name="pujaTerminada">
+			<creationcondition>
+				($beliefbase.puja_terminada)
+			</creationcondition></achievegoal>
+		
+		<achievegoal name="pasarTurno">
+			<creationcondition>
+				($beliefbase.pasar_turno &amp; $beliefbase.fase.equals("Demanda"))
+			</creationcondition></achievegoal>
+		
+		<achievegoal name="cartaComisiones">
+			<creationcondition>
+				($beliefbase.pago_comisiones)
+			</creationcondition></achievegoal>
+
+		<achievegoal name="faseMovimiento">
+			<creationcondition>
+				($beliefbase.fase.equals("Movimiento"))
+			</creationcondition></achievegoal>
+
+		<achievegoal name="pagoBono">
+			<creationcondition>
+				($beliefbase.fase.equals("Movimiento"))
+			</creationcondition></achievegoal>
+		
+		<achievegoal name="cambiarRonda">
+			<creationcondition>
+				($beliefbase.cambiar_ronda)
+			</creationcondition></achievegoal>
+		
+		<achievegoal name="cambiarFase">
+			<creationcondition>
+				($beliefbase.cambiar_fase)
+			</creationcondition></achievegoal>
+		
+		<achievegoal name="cambiarTurno">
+			<creationcondition>
+				($beliefbase.cambiar_turno)
+			</creationcondition></achievegoal>
+		
+		<achievegoal name="finalPartida">
+			<creationcondition>
+				($beliefbase.final_partida)
+			</creationcondition></achievegoal>
+	
+	</goals>
+
+	<plans>
+		<!-- PLAN INICIAL-->
+		<plan name="Inicial">
+			<body class="InicialPlan"/>
+			<trigger><messageevent ref="requestParticipar" />
+			</trigger></plan> 
+
+		<!-- 1. Asignar previsiones -->
+		<plan name="AsignarPrevisiones">
+			<body class="AsignarPrevisionesPlan"/>
+			<trigger><goal ref="faseInformacion" />
+			</trigger></plan> 
+
+		<!-- 2. Repartir cartas inversion -->
+		<plan name="RepartirCartasInversion">
+			<body class="RepartirCartasInversionPlan" />
+			<trigger><goal ref="repartirCartaInversion"/>
+			</trigger></plan> 
+
+		<!-- 3. Comprar Bonos -->
+		<plan name="ComprarBono">
+			<body class="ComprarBonoPlan" />
+			<trigger><messageevent ref="requestComprarBono"/>
+			</trigger></plan>
+
+		<!-- 4. Obtener la oferta -->
+		<plan name="ObtenerOferta">
+			<body class="ObtenerOfertaPlan" />
+			<trigger><messageevent ref="requestPedirOferta" />
+			</trigger></plan>
+		
+		<plan name="FormarOferta">
+			<body class="FormarOfertaPlan" />
+			<trigger><messageevent ref="requestColocarCartas" />
+			</trigger></plan>
+
+		<!-- 5. Pujar por oferta -->
+		<plan name="Pujar">
+			<body class="PujarPlan" />
+			<trigger><messageevent ref="requestPujar" />
+			</trigger></plan>
+
+		<!-- 6. Informar resultado puja-->
+		<plan name="ResultadoPuja">
+			<body class="ResultadoPujaPlan" />
+			<trigger><goal ref="pujaTerminada"/>
+			</trigger></plan>
+
+		<!-- 7. Pasar turno -->
+		<plan name="PasarTurno">
+			<body class="PasarTurnoPlan" />
+			<trigger><goal ref="pasarTurno"/>
+			</trigger></plan>
+
+		<!-- 8. Pagar comisiones -->
+		<plan name="PagarComisiones">
+			<body class="PagarComisionesPlan" />
+			<trigger><goal ref="cartaComisiones"/>
+			</trigger></plan>
+		
+		<plan name="FalloPagoComisiones">
+			<body class="FalloPagoComisionesPlan" />
+			<trigger><messageevent ref="failurePagoComisiones" />
+			</trigger></plan> 
+		
+		<plan name="PagoComisionesExitoso">
+			<body class="PagoComisionesExitosoPlan" />
+			<trigger><messageevent ref="informPagoComisionesExitoso" />
+			</trigger></plan> 
+
+		<!-- 9. Utilizar cartas operaciones -->
+		<plan name="HacerOperaciones">
+			<body class="HacerOperacionesPlan" />
+			<trigger><messageevent ref="requestHacerOperaciones"/>
+			</trigger></plan>
+        
+        <!-- 10. Utilizar manipulacion a la baja -->
+		<plan name="Manipulacion">
+			<body class="ManipulacionPlan" />
+			<trigger><messageevent ref="requestManipulacion"/>
+			</trigger></plan>
+        
+        <!-- 11. Utilizar venta en corto -->
+		<plan name="VentaEnCorto">
+			<body class="VentaEnCortoPlan" />
+			<trigger><messageevent ref="requestVentaEnCorto"/>
+			</trigger></plan>
+        
+        <!-- 12. Utilizar crisis sistemica -->
+		<plan name="CrisisSistemica">
+			<body class="CrisisSistemicaPlan" />
+			<trigger><messageevent ref="requestCrisisSistemica"/>
+			</trigger></plan>
+        
+        <!-- 13. Utilizar dividendos especiales -->
+		<plan name="DividendosEspeciales">
+			<body class="DividendosEspecialesPlan" />
+			<trigger><messageevent ref="requestDividendosEspeciales"/>
+			</trigger></plan>
+        
+        <!-- 14. Vender accion -->
+		<plan name="VenderAccion">
+			<body class="VenderAccionPlan" />
+			<trigger><messageevent ref="requestVenderAccion"/>
+			</trigger></plan>
+        
+        <!-- 15. Actualizacion cotizaciones empresas -->
+		<plan name="ActualizarCotizaciones">
+			<body class="ActualizarCotizacionesPlan" />
+			<trigger><goal ref="faseMovimiento"/>
+			</trigger></plan>
+        
+        <!-- 16. Pagar por bonos -->
+		<plan name="PagarPorBonos">
+			<body class="PagarPorBonosPlan" />
+			<trigger><goal ref="pagoBono"/>
+			</trigger></plan>
+        
+        <!-- 17. Cambiar ronda -->
+		<plan name="CambiarRonda">
+			<body class="CambiarRondaPlan" />
+			<trigger><goal ref="cambiarRonda"/>
+			</trigger></plan>
+        
+        <!-- 18. Cambiar fase -->
+		<plan name="CambiarFase">
+			<body class="CambiarFasePlan" />
+			<trigger><goal ref="cambiarFase"/>
+			</trigger></plan>
+        
+        <!-- 19. Cambiar turno -->
+		<plan name="CambiarTurno">
+			<body class="CambiarTurnoPlan" />
+			<trigger><goal ref="cambiarTurno"/>
+			</trigger></plan>
+        
+        <!-- 20. Recuento final -->
+		<plan name="Recuento final">
+			<body class="RecuentoFinalPlan" />
+			<trigger><goal ref="finalPartida"/>
+			</trigger></plan>
+		
+		<!-- 21. Turno acabado -->
+		<plan name="TurnoAcabado">
+			<body class="TurnoAcabadoPlan" />
+			<trigger><messageevent ref="informTurnoAcabado"/>
+			</trigger></plan>
+       
+		
+	</plans>
+
+	<events>
+		<!-- PLAN INCIAL-->
+		<messageevent name="requestParticipar" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Participar_en_simulacion.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 3. Comprar bono -->
+		<messageevent name="requestComprarBono" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Comprar_bono.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 4. Obtener la oferta -->
+		<messageevent name="requestPedirOferta" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Pedir_cartas_acciones.class</value>
+			</parameter>
+		</messageevent>
+
+		<messageevent name="requestColocarCartas" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Colocar_cartas_acciones.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 5. Pujar por oferta -->
+		<messageevent name="requestPujar" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Pujar.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 8. Pagar comisiones -->
+		<messageevent name="failurePagoComisiones" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.FAILURE</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Causa_fallo_pago_comisiones.class</value>
+			</parameter>
+		</messageevent>
+
+        <messageevent name="informPagoComisionesExitoso" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Pago_comisiones_exitosa.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 9. Utilizar carta de operaciones -->
+		<messageevent name="requestHacerOperaciones" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Utilizar_carta_operaciones.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 10. Utilizar manipulacion a la baja -->
+		<messageevent name="requestManipulacion" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Utilizar_manipulacion_a_la_baja.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 11. Utilizar venta en corto  -->
+		<messageevent name="requestVentaEnCorto" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Utilizar_venta_en_corto.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 12. Utilizar crisis sistemica  -->
+		<messageevent name="requestCrisisSistemica" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Utilizar_crisis_sistemica.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 13. Utilizar dividendos especiales  -->
+		<messageevent name="requestDividendosEspeciales" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Utilizar_dividendos_especiales.class</value>
+			</parameter>
+		</messageevent>
+
+        <!-- 14. Vender accion  -->
+		<messageevent name="requestVenderAccion" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Vender_accion.class</value>
+			</parameter>
+		</messageevent>
+
+		 <!-- 21. Turno acabado  -->
+		<messageevent name="informTurnoAcabado" direction="receive" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="content-class" class="Class" direction="fixed">
+				<value>Turno_terminado.class</value>
+			</parameter>
+		</messageevent>
+
+		<!-- ENVIAR: MENSAJES GENERICOS DE ENVIO -->
+		<messageevent name="Request_Generico" direction="send" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.REQUEST</value>
+			</parameter>
+			<parameter name="language" class="String" direction="fixed">
+				<value>SFipa.NUGGETS_XML</value>
+			</parameter>
+		</messageevent>
+
+		<messageevent name="Inform_Generico" direction="send" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.INFORM</value>
+			</parameter>
+			<parameter name="language" class="String" direction="fixed">
+				<value>SFipa.NUGGETS_XML</value>
+			</parameter>
+		</messageevent>
+
+		<messageevent name="Failure_Generico" direction="send" type="fipa">
+			<parameter name="performative" class="String" direction="fixed">
+				<value>SFipa.FAILURE</value>
+			</parameter>
+			<parameter name="language" class="String" direction="fixed">
+				<value>SFipa.NUGGETS_XML</value>
+			</parameter>
+		</messageevent>
+		
+	</events>
+
+	<configurations>
+		<configuration name="default">
+			<beliefs>
+                <initialbelief ref="repartir_cartas_inversion">
+					<fact>false</fact></initialbelief>
+                <initialbelief ref="puja_terminada">
+					<fact>false</fact></initialbelief>
+				<initialbelief ref="pasar_turno">
+					<fact>false</fact></initialbelief>
+				<initialbelief ref="pago_comisiones">
+					<fact>false</fact></initialbelief>
+				<initialbelief ref="hay_bonos">
+					<fact>false</fact></initialbelief>
+				<initialbelief ref="cambiar_ronda">
+					<fact>false</fact></initialbelief>
+				<initialbelief ref="cambiar_fase">
+					<fact>false</fact></initialbelief>
+				<initialbelief ref="cambiar_turno">
+					<fact>false</fact></initialbelief>
+				<initialbelief ref="final_partida">
+					<fact>false</fact></initialbelief>
+				<initialbelief ref="fase">
+					<fact>"Inicial"</fact></initialbelief>
+			</beliefs>
+			<goals>
+				<initialgoal ref="df_register">
+					<parameter ref="description"> <value>
+						SFipa.createAgentDescription(null,SFipa.createServiceDescription("tablero",null, null))</value></parameter>
+				</initialgoal>
+			</goals>
+		</configuration>
+	</configurations>
+</agent>
