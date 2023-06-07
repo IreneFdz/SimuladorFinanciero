@@ -45,7 +45,7 @@ public class ResultadoPujaPlan extends Plan {
                     if(pila.getNumero() == key.getNumero()){
                         int precio_puja = pilas_cartas.getPujasMinimas().get(pila) - 1000;
                         System.out.println("--- El inversor: "+ Character.getNumericValue(pilas_cartas.getMapaPilaInversor().get(key).getLocalName().charAt(8))+ " ha conseguido la pila: "+
-                            pila.getNumero()+" a un precio de: "+precio_puja);
+                            pila.getNumero()+" a un precio de: "+precio_puja+"$");
                     }
                 } 
 		    }

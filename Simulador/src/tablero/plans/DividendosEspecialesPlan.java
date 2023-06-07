@@ -56,7 +56,7 @@ public class DividendosEspecialesPlan extends Plan {
             HashMap <Carta_acciones, AgentIdentifier> mapa = new HashMap <Carta_acciones, AgentIdentifier>();
             //Pagar 1000 de dividendos por accion a los inversores con acciones de esa empresa
             for (AgentIdentifier x : inversores.getIds()) {
-                System.out.println ("ATENCION --- El inversor: "+ Character.getNumericValue(x.getLocalName().charAt(8)) + " tiene este dinero: "+ inversores.getDineroPorId(x).getCantidad());         
+                //System.out.println ("--- El inversor: "+ Character.getNumericValue(x.getLocalName().charAt(8)) + " tiene: "+ inversores.getDineroPorId(x).getCantidad()+ "$");         
             }
             
             for (Carta_acciones carta: pilas_cartas.getMapaCartaInversor().keySet()){  
@@ -67,7 +67,7 @@ public class DividendosEspecialesPlan extends Plan {
                     mapa.put(carta, pilas_cartas.getMapaCartaInversor().get(carta));
                 }
             } 
-            System.out.println ("--- El inversor: "+ Character.getNumericValue(sender.getLocalName().charAt(8)) + " ha decidido que la empresa: "+ contenido.getEmpresa().getNombre()+" pague 1000 de dividendos.");         
+            System.out.println ("--- El inversor: "+ Character.getNumericValue(sender.getLocalName().charAt(8)) + " ha decidido que la empresa: "+ contenido.getEmpresa().getNombre()+" pague 1000$ de dividendos.");         
             dividendos_exitosa.setQue(contenido.getEmpresa());
             dividendos_exitosa.setQuien(sender);
             dividendos_exitosa.setMapa(mapa);

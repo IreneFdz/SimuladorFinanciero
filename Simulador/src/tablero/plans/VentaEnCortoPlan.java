@@ -59,7 +59,7 @@ public class VentaEnCortoPlan extends Plan {
                     inversores.getMapaInversion().get(key).setBorrada(true);
                 }
             }
-            System.out.println( "--- El inversor: "+Character.getNumericValue(sender.getLocalName().charAt(8))+ " ha recibido 12.000 euros");
+            System.out.println( "--- El inversor: "+Character.getNumericValue(sender.getLocalName().charAt(8))+ " ha recibido 12.000$");
             venta_exitosa.setQue(contenido.getCartaOperaciones());
             venta_exitosa.setQuien(sender);
                 for (AgentIdentifier x : inversores.getIds()) {

@@ -45,7 +45,6 @@ public class HacerOperacionesPlan extends Plan {
                     tengo_carta = true;
                 }
             }
-
             // Decidir la empresa en la que se quiere hacer la operacion.
             // Obtener una valoracion de cada empresa que es igual a las acciones del inversor menos las acciones de los otro inversores
             AgentIdentifier id = new AgentIdentifier(getAgentName(), true);

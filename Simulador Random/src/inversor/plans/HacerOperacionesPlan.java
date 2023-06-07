@@ -18,7 +18,7 @@ public class HacerOperacionesPlan extends Plan {
 
     public void body()
     {
-        
+        System.out.println("Quiero hacer operaciones");
         ServiceDescription sd = new ServiceDescription();
         sd.setName("tablero");
         AgentDescription dfadesc = new AgentDescription();
@@ -31,6 +31,7 @@ public class HacerOperacionesPlan extends Plan {
         dispatchSubgoalAndWait(ft);
         AgentDescription[] result	= (AgentDescription[])ft.getParameterSet("result").getValues();
         if (result.length>0){
+            System.out.println("Quiero hacer operaciones");
             Carta_estrategia_inversion carta_estrategia = (Carta_estrategia_inversion) getBeliefbase().getBelief("Carta_estrategia_inversion").getFact();
             MisCartasAcciones mis_cartas = (MisCartasAcciones) getBeliefbase().getBelief("MisCartasAcciones").getFact();
             Inversores inversores = (Inversores) getBeliefbase().getBelief("Inversores").getFact();

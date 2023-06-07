@@ -11,7 +11,6 @@ public class CambiarFasePlan extends Plan {
 
     public void body()
     {
-        //System.out.println ("CAMBIO DE FASE");
         InformacionGeneral informacion= (InformacionGeneral) getBeliefbase().getBelief("InformacionGeneral").getFact();
         Inversores inversores= (Inversores) getBeliefbase().getBelief("Inversores").getFact();
         Fase_cambiada fase_cambiada = new Fase_cambiada();

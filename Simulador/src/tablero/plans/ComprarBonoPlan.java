@@ -35,7 +35,7 @@ public class ComprarBonoPlan extends Plan {
             System.out.println ("COMPRA DE BONOS");
         if (contenido.getBono().getValor()==1000 && contenido.getBono().getValor()*contenido.getCuantos().getCuanto() <= inversores.getDineroPorId(sender).getCantidad() && contenido.getCuantos().getCuanto() <= 3){
 			//crear mensaje inform-result bono comprado
-            System.out.println("--- El inversor: "+ Character.getNumericValue(sender.getLocalName().charAt(8))+" ha comprado "+ contenido.getCuantos().getCuanto() +" bonos de 1000 euros.");
+            System.out.println("--- El inversor: "+ Character.getNumericValue(sender.getLocalName().charAt(8))+" ha comprado "+ contenido.getCuantos().getCuanto() +" bonos de 1000$");
             Compra_bono_exitosa compra_exitosa = new Compra_bono_exitosa();
 			compra_exitosa.setQue(contenido.getBono());
             compra_exitosa.setQuien(sender);

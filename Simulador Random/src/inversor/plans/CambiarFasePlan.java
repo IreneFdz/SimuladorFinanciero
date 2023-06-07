@@ -22,7 +22,7 @@ public class CambiarFasePlan extends Plan {
         getBeliefbase().getBelief("InformacionGeneral").setFact(informacion);  
 
         if(fase_cambiada.getQue().getNombre().equals("Acciones"))
-             getBeliefbase().getBelief("cambiar_turno").setFact(true); 
+            getBeliefbase().getBelief("cambiar_turno").setFact(true); 
 
         if(fase_cambiada.getQue().getNombre().equals("Venta")){
             getBeliefbase().getBelief("manipulacion").setFact(false);    

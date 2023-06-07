@@ -38,7 +38,6 @@ public class RecuentoFinalPlan extends Plan {
             for (Carta_acciones carta:pilas_cartas.getMapaCartaInversor().keySet()) {
                 if (carta.getTipo() == 1 && carta.getEmpresa().equals(empresa.getNombre())){
                     numero_acciones.put(pilas_cartas.getMapaCartaInversor().get(carta), numero_acciones.get(pilas_cartas.getMapaCartaInversor().get(carta))+1);
-                    //System.out.println("Se suma la accion de la empresa "+carta.getEmpresa()+ " identificador "+ carta.getId()+ " del inversor "+ Character.getNumericValue(pilas_cartas.getMapaCartaInversor().get(carta).getLocalName().charAt(8)));
                 }
             }
             int mayor = 0;
@@ -91,9 +90,30 @@ public class RecuentoFinalPlan extends Plan {
         System.out.println ("--- El inversor: "+ Character.getNumericValue(inversores.getIds().get(1).getLocalName().charAt(8)) + " tiene una puntuacion de: "+ resultado.get(inversores.getIds().get(1)));     
         System.out.println ("--- El inversor: "+ Character.getNumericValue(inversores.getIds().get(2).getLocalName().charAt(8)) + " tiene una puntuacion de: "+ resultado.get(inversores.getIds().get(2)));     
 
+        boolean hayEmpate = false;
+        int ganador = 0;
         for (AgentIdentifier id : resultado.keySet()) {
-            if (resultado.get(id) == puntacion_mayor)
-                System.out.println ("El ganador es el inversor numero: "+ Character.getNumericValue(id.getLocalName().charAt(8)));         
+            if (resultado.get(id) == puntacion_mayor){
+                int actual = Integer.parseInt(String.valueOf(id.getLocalName().charAt(8)));
+                if (actual != ganador & ganador != 0)
+                    hayEmpate = true;
+                ganador = Integer.parseInt(String.valueOf(id.getLocalName().charAt(8)));   
+            }
+                
+
+        }
+        if(hayEmpate){
+            System.out.println ("Hay un empate entre los siguientes inversores: ");  
+            for (AgentIdentifier id : resultado.keySet()) {
+                if (resultado.get(id) == puntacion_mayor)
+                    System.out.println ("Inversor "+ Character.getNumericValue(id.getLocalName().charAt(8)));         
+            }
+        }
+        else{
+            for (AgentIdentifier id : resultado.keySet()) {
+                if (resultado.get(id) == puntacion_mayor)
+                    System.out.println ("El ganador es el inversor numero: "+ Character.getNumericValue(id.getLocalName().charAt(8)));         
+            }
         }
         IMessageEvent msg = createMessageEvent("Inform_Generico");
         recuento_hecho.setMapa(resultado);
